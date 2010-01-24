@@ -1,6 +1,51 @@
-= twitter_game_bot
+= Twitter Game Bot
 
-Description goes here.
+Just a simple bot skeleton which can be used by game developers to post content to twitter on a regular basis.
+
+
+Implementation example:
+
+    require 'twitter_game_bot'
+    require 'CGI'
+
+    class MyGame < SCEA::TweetBot
+  
+      trigger_hourly        :tweet_top_player_changes
+      trigger_daily         :tweet_top_5, "14:00 - PST"
+      trigger_weekly        :tweet_weekly_stats, "Monday - 15:00 - PST"
+  
+      twitter_credentials   :login => 'mnr', :password => 'sekrit'
+      game_api_credentials  :login => 'mnr', :password => 'sekrit'
+      game_api_url          'http://mnr.com/beatit/'
+  
+      def tweet_top_player_changes
+        last_top_5 = load_data[:last_top_5]
+        top_5      = game_api.top_5.to_hash # expected -> {1 => 'James', 2 => 'Peter', 3 => 'Louisa'}
+        save_data(:last_top_5, top_5)
+        diff       = top_5.diff(last_top_5)
+        diff.each do |position, name|
+          tweet "#{CGI.escape(name)} is now #{position.ordinalize}"
+        end
+      end
+  
+      def tweet_top_5
+        # let's convert {2 => 'Peter', 1 => 'James', 3 => 'Louisa'} to
+        #               [[1,'James'], [2,'Peter'], [3,'Louisa']]
+        sorted_top_5 = game_api.top_5.sort
+        msg = sorted_top_5.map do |position, name|
+          "#{position.ordinalize}: #{CGI.escape(name)}"
+        end.join(' ')
+        tweet msg
+      end
+  
+      def tweet_weekly_stats
+        # TODO
+      end
+  
+    end
+
+
+
 
 == Note on Patches/Pull Requests
  
